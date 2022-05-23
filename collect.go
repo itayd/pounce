@@ -23,6 +23,7 @@ var collectFlags = struct {
 	print     bool
 	bin       bool
 	recursive bool
+	abs       bool
 }{}
 
 var collectCmd = cli.Command{
@@ -65,6 +66,12 @@ var collectCmd = cli.Command{
 			Name:        "bin",
 			Destination: &collectFlags.bin,
 			Usage:       "also search in binary files",
+		},
+		&cli.BoolFlag{
+			Name:        "abs",
+			Aliases:     []string{"a"},
+			Destination: &collectFlags.abs,
+			Usage:       "write all file's absolute paths",
 		},
 	},
 	Action: func(c *cli.Context) error {
@@ -176,15 +183,23 @@ func gather(prev, path string, matcher func(string) bool) error {
 		r = io.MultiReader(bytes.NewReader(pre), f)
 	}
 
+	if collectFlags.abs {
+		apath, err := filepath.Abs(path)
+		if err != nil {
+			return fmt.Errorf("abs %s: %w", path, err)
+		}
+
+		path = apath
+	}
+
 	if collectFlags.print {
 		fmt.Fprintln(os.Stderr, path)
 	}
 
 	s := bufio.NewScanner(r)
 	for lineNum := 1; s.Scan(); lineNum++ {
-		text := s.Text()
 
-		if matcher(text) {
+		if text := s.Text(); matcher(text) {
 			fmt.Printf("%s:%d:%s\n", path, lineNum, text)
 		}
 	}

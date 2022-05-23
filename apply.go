@@ -11,27 +11,27 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var replaceFlags = struct {
+var applyFlags = struct {
 	print bool
 	bak   string
 }{}
 
-var replaceCmd = cli.Command{
-	Name:        "replace",
-	UsageText:   "pounce replace [-opts]",
-	Description: "replace lines in files according given replacement content",
-	Aliases:     []string{"r"},
+var applyCmd = cli.Command{
+	Name:        "apply",
+	UsageText:   "pounce apply [-opts]",
+	Description: "apply modified modified lines",
+	Aliases:     []string{"a"},
 	Flags: []cli.Flag{
 		&cli.BoolFlag{
 			Name:        "print",
 			Aliases:     []string{"p"},
-			Destination: &replaceFlags.print,
+			Destination: &applyFlags.print,
 			Usage:       "print each incoming line",
 		},
 		&cli.StringFlag{
 			Name:        "bak",
 			Aliases:     []string{"i"},
-			Destination: &replaceFlags.bak,
+			Destination: &applyFlags.bak,
 			Usage:       "if not empty, backup originals with given suffix",
 		},
 	},
@@ -55,7 +55,7 @@ func processReplaceInput(r io.Reader) error {
 			return nil
 		}
 
-		if err := replace(acc.path, acc.data); err != nil {
+		if err := apply(acc.path, acc.data); err != nil {
 			return fmt.Errorf("%s: %w", acc.path, err)
 		}
 
@@ -72,7 +72,7 @@ func processReplaceInput(r io.Reader) error {
 			continue
 		}
 
-		if replaceFlags.print {
+		if applyFlags.print {
 			fmt.Fprintln(os.Stderr, text)
 		}
 
@@ -106,13 +106,14 @@ func processReplaceInput(r io.Reader) error {
 	return nil
 }
 
-func replace(path string, data map[int]string) error {
+// TODO: all contents is read into memory. Need to do it piecewise.
+func apply(path string, data map[int]string) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	if bak := replaceFlags.bak; len(bak) > 0 {
+	if bak := applyFlags.bak; len(bak) > 0 {
 		if err := os.WriteFile(path+bak, content, 0755); err != nil {
 			return fmt.Errorf("backup %s%s: %w", path, bak, err)
 		}

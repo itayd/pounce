@@ -7,6 +7,6 @@ import (
 var app = cli.App{
 	Commands: []*cli.Command{
 		&collectCmd,
-		&replaceCmd,
+		&applyCmd,
 	},
 }
