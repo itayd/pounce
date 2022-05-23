@@ -23,11 +23,12 @@ $ pounce collect -r -s 'dog' | sed -e 's/dog/cat/g' | pounce apply
 
 # TODO
 
-[ ] deal with colons in file names.
-[ ] deal with no EOL last line.
-[ ] apply: only generate backup files if content actually changed.
-[ ] apply: read/write piece wise.
-[ ] \n vs \r\n?
+- [ ] tests
+- [ ] deal with colons in file names.
+- [ ] deal with no EOL last line.
+- [ ] apply: only generate backup files if content actually changed.
+- [ ] apply: read/write piece wise.
+- [ ] \n vs \r\n?
 
 # Disclaimer
 
