@@ -154,6 +154,10 @@ func gather(prev, path string, matcher func(string) bool) error {
 		return nil
 	}
 
+	if !fi.Mode().IsRegular() {
+		return nil
+	}
+
 	if exts := collectFlags.exts.Value(); len(exts) > 0 {
 		ext := filepath.Ext(path)
 		if len(ext) > 0 && ext[0] == '.' {
