@@ -1,0 +1,12 @@
+github.com/antzucaro/matchr v0.0.0-20210222213004-b04723ef80f0 h1:R/qAiUxFT3mNgQaNqJe0IVznjKRNm23ohAIh9lgtlzc=
+github.com/antzucaro/matchr v0.0.0-20210222213004-b04723ef80f0/go.mod h1:v3ZDlfVAL1OrkKHbGSFFK60k0/7hruHPDq2XMs9Gu6U=
+github.com/cpuguy83/go-md2man/v2 v2.0.1 h1:r/myEWzV9lfsM1tFLgDyu0atFtJ1fXn261LKYj/3DxU=
+github.com/cpuguy83/go-md2man/v2 v2.0.1/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
+github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf35Ld67mk=
+github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
+github.com/urfave/cli/v2 v2.8.0 h1:EZsAB20oRW4nHcB99TTL6PrXpBGIEujMEKdjwruY9KQ=
+github.com/urfave/cli/v2 v2.8.0/go.mod h1:TYFbtzt/azQoJOrGH5mDfZtS0jIkl/OeFwlRWPR9KRM=
+golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf h1:oXVg4h2qJDd9htKxb5SCpFBHLipW6hXmL3qpUixS2jw=
+golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf/go.mod h1:yh0Ynu2b5ZUe3MQfp2nM0ecK7wsgouWTDN0FNeJuIys=
+golang.org/x/tools v0.1.10 h1:QjFRCZxdOhBJ/UNgnBZLbNV13DlbnK0quyivTnXJM20=
+golang.org/x/tools v0.1.10/go.mod h1:Uh6Zz+xoGYZom868N8YTex3t7RhtHDBrE8Gzo9bV56E=
