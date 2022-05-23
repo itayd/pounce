@@ -2,6 +2,13 @@
 
 simple find and replace in files.
 
+# Install
+
+```
+$ go install github.com/itayd/pounce
+```
+
+# Use
 ```
 $ pounce collect -r -s 'dog' > /tmp/dogs.txt
 $ cat /tmp/dogs.txt
