@@ -18,16 +18,12 @@ import (
 
 const wdprefix = "# wd="
 
-var collectFlags = struct {
-	exts      cli.StringSlice
-	regexs    cli.StringSlice
-	strs      cli.StringSlice
-	print     bool
-	bin       bool
-	recursive bool
-	abs       bool
-	nowd      bool
-}{}
+type collectFlags struct {
+	exts, regexs, strs               cli.StringSlice
+	print, bin, recursive, abs, nowd bool
+}
+
+var cliCollectFlags collectFlags
 
 var collectCmd = cli.Command{
 	Name:        "collect",
@@ -38,88 +34,91 @@ var collectCmd = cli.Command{
 		&cli.BoolFlag{
 			Name:        "print",
 			Aliases:     []string{"p"},
-			Destination: &collectFlags.print,
+			Destination: &cliCollectFlags.print,
 			Usage:       "print matched files to stderr",
 		},
 		&cli.BoolFlag{
 			Name:        "recursive",
 			Aliases:     []string{"r"},
-			Destination: &collectFlags.recursive,
+			Destination: &cliCollectFlags.recursive,
 			Usage:       "process subdirectories recursively",
 		},
 		&cli.StringSliceFlag{
 			Name:        "ext",
 			Aliases:     []string{"x"},
-			Destination: &collectFlags.exts,
+			Destination: &cliCollectFlags.exts,
 			Usage:       "only process files with extention",
 		},
 		&cli.StringSliceFlag{
 			Name:        "regex",
 			Aliases:     []string{"e"},
-			Destination: &collectFlags.regexs,
+			Destination: &cliCollectFlags.regexs,
 			Usage:       "filter content for regexp",
 		},
 		&cli.StringSliceFlag{
 			Name:        "str",
 			Aliases:     []string{"s"},
-			Destination: &collectFlags.strs,
+			Destination: &cliCollectFlags.strs,
 			Usage:       "filter content for strings",
 		},
 		&cli.BoolFlag{
 			Name:        "bin",
-			Destination: &collectFlags.bin,
+			Destination: &cliCollectFlags.bin,
 			Usage:       "also search in binary files",
 		},
 		&cli.BoolFlag{
 			Name:        "abs",
 			Aliases:     []string{"a"},
-			Destination: &collectFlags.abs,
+			Destination: &cliCollectFlags.abs,
 			Usage:       "write all file's absolute paths",
 		},
 		&cli.BoolFlag{
 			Name:        "nowd",
-			Destination: &collectFlags.nowd,
+			Destination: &cliCollectFlags.nowd,
 			Usage:       "supress working directory comment",
 		},
 	},
 	Action: func(c *cli.Context) error {
-		m, err := matcher()
-		if err != nil {
-			return err
-		}
-
-		if !collectFlags.abs && !collectFlags.nowd {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return fmt.Errorf("getwd: %w", err)
-			}
-
-			fmt.Printf("%s%s\n", wdprefix, cwd)
-		}
-
-		args := c.Args().Slice()
-		if len(args) == 0 {
-			return gather("", ".", m)
-		}
-
-		for _, arg := range args {
-			if err := gather("", arg, m); err != nil {
-				return err
-			}
-		}
-
-		return nil
+		return collect(os.Stdout, os.Stderr, cliCollectFlags, c.Args().Slice())
 	},
 }
 
-func matcher() (func(string) bool, error) {
+func collect(wout, werr io.Writer, flags collectFlags, args []string) error {
+	m, err := matcher(flags)
+	if err != nil {
+		return err
+	}
+
+	if !flags.abs && !flags.nowd {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("getwd: %w", err)
+		}
+
+		fmt.Fprintf(wout, "%s%s\n", wdprefix, cwd)
+	}
+
+	if len(args) == 0 {
+		return gather(wout, werr, flags, "", ".", m)
+	}
+
+	for _, arg := range args {
+		if err := gather(wout, werr, flags, "", arg, m); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func matcher(flags collectFlags) (func(string) bool, error) {
 	var ms []func(string) bool
 
-	for _, s := range collectFlags.strs.Value() {
+	for _, s := range flags.strs.Value() {
 		ms = append(ms, func(x string) bool { return strings.Contains(x, s) })
 	}
 
-	for _, s := range collectFlags.regexs.Value() {
+	for _, s := range flags.regexs.Value() {
 		re, err := regexp.Compile(s)
 		if err != nil {
 			return nil, fmt.Errorf("matcher %q: %w", s, err)
@@ -143,7 +142,7 @@ func matcher() (func(string) bool, error) {
 	}, nil
 }
 
-func gather(prev, path string, matcher func(string) bool) error {
+func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher func(string) bool) error {
 	f, err := os.OpenFile(path, os.O_RDONLY, 0)
 	if err != nil {
 		return fmt.Errorf("open %s: %w", path, err)
@@ -157,7 +156,7 @@ func gather(prev, path string, matcher func(string) bool) error {
 	}
 
 	if fi.IsDir() {
-		if prev != "" && !collectFlags.recursive {
+		if prev != "" && !flags.recursive {
 			return nil
 		}
 
@@ -167,7 +166,7 @@ func gather(prev, path string, matcher func(string) bool) error {
 		}
 
 		for _, name := range names {
-			if err := gather(path, filepath.Join(path, name), matcher); err != nil {
+			if err := gather(wout, werr, flags, path, filepath.Join(path, name), matcher); err != nil {
 				return err
 			}
 		}
@@ -179,7 +178,7 @@ func gather(prev, path string, matcher func(string) bool) error {
 		return nil
 	}
 
-	if exts := collectFlags.exts.Value(); len(exts) > 0 {
+	if exts := flags.exts.Value(); len(exts) > 0 {
 		ext := filepath.Ext(path)
 		if len(ext) > 0 && ext[0] == '.' {
 			ext = ext[1:]
@@ -192,7 +191,7 @@ func gather(prev, path string, matcher func(string) bool) error {
 
 	var r io.Reader = f
 
-	if !collectFlags.bin {
+	if !flags.bin {
 		pre := make([]byte, 32)
 		n, err := f.Read(pre)
 		if err != nil && err != io.EOF {
@@ -208,7 +207,7 @@ func gather(prev, path string, matcher func(string) bool) error {
 		r = io.MultiReader(bytes.NewReader(pre), f)
 	}
 
-	if collectFlags.abs {
+	if flags.abs {
 		apath, err := filepath.Abs(path)
 		if err != nil {
 			return fmt.Errorf("abs %s: %w", path, err)
@@ -217,15 +216,15 @@ func gather(prev, path string, matcher func(string) bool) error {
 		path = apath
 	}
 
-	if collectFlags.print {
-		fmt.Fprintln(os.Stderr, path)
+	if flags.print {
+		fmt.Fprintln(werr, path)
 	}
 
 	s := bufio.NewScanner(r)
 	for lineNum := 1; s.Scan(); lineNum++ {
 
 		if text := s.Text(); matcher(text) {
-			fmt.Printf("%s:%d:%s\n", path, lineNum, text)
+			fmt.Fprintf(wout, "%s:%d:%s\n", path, lineNum, text)
 		}
 	}
 

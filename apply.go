@@ -11,11 +11,12 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var applyFlags = struct {
-	print bool
-	nowd  bool
-	bak   string
-}{}
+type applyFlags struct {
+	print, nowd bool
+	bak         string
+}
+
+var cliApplyFlags applyFlags
 
 var applyCmd = cli.Command{
 	Name:        "apply",
@@ -26,27 +27,27 @@ var applyCmd = cli.Command{
 		&cli.BoolFlag{
 			Name:        "print",
 			Aliases:     []string{"p"},
-			Destination: &applyFlags.print,
+			Destination: &cliApplyFlags.print,
 			Usage:       "print each incoming line",
 		},
 		&cli.StringFlag{
 			Name:        "bak",
 			Aliases:     []string{"i"},
-			Destination: &applyFlags.bak,
+			Destination: &cliApplyFlags.bak,
 			Usage:       "if not empty, backup originals with given suffix",
 		},
 		&cli.BoolFlag{
 			Name:        "nowd",
-			Destination: &applyFlags.nowd,
+			Destination: &cliApplyFlags.nowd,
 			Usage:       "ignore wd comment",
 		},
 	},
 	Action: func(c *cli.Context) error {
-		return processReplaceInput(os.Stdin)
+		return apply(cliApplyFlags, os.Stdin)
 	},
 }
 
-func processReplaceInput(r io.Reader) error {
+func apply(flags applyFlags, r io.Reader) error {
 	s := bufio.NewScanner(r)
 
 	acc := struct {
@@ -61,7 +62,7 @@ func processReplaceInput(r io.Reader) error {
 			return nil
 		}
 
-		if err := apply(acc.path, acc.data); err != nil {
+		if err := apply1(flags, acc.path, acc.data); err != nil {
 			return fmt.Errorf("%s: %w", acc.path, err)
 		}
 
@@ -74,7 +75,7 @@ func processReplaceInput(r io.Reader) error {
 	for i := 0; s.Scan(); i++ {
 		text := strings.TrimLeft(s.Text(), " \t")
 
-		if !applyFlags.nowd && strings.HasPrefix(text, wdprefix) {
+		if !flags.nowd && strings.HasPrefix(text, wdprefix) {
 			expectedwd := text[len(wdprefix):]
 
 			wd, err := os.Getwd()
@@ -93,7 +94,7 @@ func processReplaceInput(r io.Reader) error {
 			continue
 		}
 
-		if applyFlags.print {
+		if flags.print {
 			fmt.Fprintln(os.Stderr, text)
 		}
 
@@ -128,13 +129,13 @@ func processReplaceInput(r io.Reader) error {
 }
 
 // TODO: all contents is read into memory. Need to do it piecewise.
-func apply(path string, data map[int]string) error {
+func apply1(flags applyFlags, path string, data map[int]string) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	if bak := applyFlags.bak; len(bak) > 0 {
+	if bak := flags.bak; len(bak) > 0 {
 		if err := os.WriteFile(path+bak, content, 0755); err != nil {
 			return fmt.Errorf("backup %s%s: %w", path, bak, err)
 		}
