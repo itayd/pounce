@@ -13,6 +13,7 @@ import (
 
 var applyFlags = struct {
 	print bool
+	nowd  bool
 	bak   string
 }{}
 
@@ -33,6 +34,11 @@ var applyCmd = cli.Command{
 			Aliases:     []string{"i"},
 			Destination: &applyFlags.bak,
 			Usage:       "if not empty, backup originals with given suffix",
+		},
+		&cli.BoolFlag{
+			Name:        "nowd",
+			Destination: &applyFlags.nowd,
+			Usage:       "ignore wd comment",
 		},
 	},
 	Action: func(c *cli.Context) error {
@@ -67,6 +73,21 @@ func processReplaceInput(r io.Reader) error {
 
 	for i := 0; s.Scan(); i++ {
 		text := strings.TrimLeft(s.Text(), " \t")
+
+		if !applyFlags.nowd && strings.HasPrefix(text, wdprefix) {
+			expectedwd := text[len(wdprefix):]
+
+			wd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("getwd: %w", err)
+			}
+
+			if wd != expectedwd {
+				return fmt.Errorf("current wd %s != expected %s, use --nowd to suppress", wd, expectedwd)
+			}
+
+			continue
+		}
 
 		if len(text) == 0 || text[0] == '#' {
 			continue

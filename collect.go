@@ -16,6 +16,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const wdprefix = "# wd="
+
 var collectFlags = struct {
 	exts      cli.StringSlice
 	regexs    cli.StringSlice
@@ -24,6 +26,7 @@ var collectFlags = struct {
 	bin       bool
 	recursive bool
 	abs       bool
+	nowd      bool
 }{}
 
 var collectCmd = cli.Command{
@@ -73,11 +76,25 @@ var collectCmd = cli.Command{
 			Destination: &collectFlags.abs,
 			Usage:       "write all file's absolute paths",
 		},
+		&cli.BoolFlag{
+			Name:        "nowd",
+			Destination: &collectFlags.nowd,
+			Usage:       "supress working directory comment",
+		},
 	},
 	Action: func(c *cli.Context) error {
 		m, err := matcher()
 		if err != nil {
 			return err
+		}
+
+		if !collectFlags.abs && !collectFlags.nowd {
+			cwd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("getwd: %w", err)
+			}
+
+			fmt.Printf("%s%s\n", wdprefix, cwd)
 		}
 
 		args := c.Args().Slice()
@@ -109,6 +126,10 @@ func matcher() (func(string) bool, error) {
 		}
 
 		ms = append(ms, func(x string) bool { return re.MatchString(x) })
+	}
+
+	if len(ms) == 0 {
+		return nil, fmt.Errorf("no content filters set")
 	}
 
 	return func(s string) bool {
