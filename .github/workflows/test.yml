@@ -1,0 +1,23 @@
+name: test
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: setup go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.18.0'
+    - name: build
+      run: make pounce
+    - name: test
+      run: make test
