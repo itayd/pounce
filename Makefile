@@ -1,3 +1,6 @@
+.PHONY: all
+all: pounce test
+
 .PHONY: pounce
 pounce:
 	go build .
