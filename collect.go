@@ -18,6 +18,12 @@ import (
 
 const wdprefix = "# wd="
 
+var trimPathPrefix = os.Getenv("TRIM_CWD_PREFIX")
+
+func trimPath(p string) string {
+	return strings.TrimPrefix(p, trimPathPrefix)
+}
+
 type collectFlags struct {
 	exts, regexs, strs               cli.StringSlice
 	print, bin, recursive, abs, nowd bool
@@ -53,13 +59,13 @@ var collectCmd = cli.Command{
 			Name:        "regex",
 			Aliases:     []string{"e"},
 			Destination: &cliCollectFlags.regexs,
-			Usage:       "filter content for regexp",
+			Usage:       "filter content for given regexp",
 		},
 		&cli.StringSliceFlag{
 			Name:        "str",
 			Aliases:     []string{"s"},
 			Destination: &cliCollectFlags.strs,
-			Usage:       "filter content for strings",
+			Usage:       "filter content for given string",
 		},
 		&cli.BoolFlag{
 			Name:        "bin",
@@ -95,7 +101,7 @@ func collect(wout, werr io.Writer, flags collectFlags, args []string) error {
 			return fmt.Errorf("getwd: %w", err)
 		}
 
-		fmt.Fprintf(wout, "%s%s\n", wdprefix, cwd)
+		fmt.Fprintf(wout, "%s%s\n", wdprefix, trimPath(cwd))
 	}
 
 	if len(args) == 0 {
@@ -115,7 +121,8 @@ func matcher(flags collectFlags) (func(string) bool, error) {
 	var ms []func(string) bool
 
 	for _, s := range flags.strs.Value() {
-		ms = append(ms, func(x string) bool { return strings.Contains(x, s) })
+		s1 := s
+		ms = append(ms, func(x string) bool { return strings.Contains(x, s1) })
 	}
 
 	for _, s := range flags.regexs.Value() {
@@ -213,18 +220,22 @@ func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher
 			return fmt.Errorf("abs %s: %w", path, err)
 		}
 
+		if trimPathPrefix != "" {
+			apath = strings.TrimPrefix(apath, trimPathPrefix)
+		}
+
 		path = apath
 	}
 
 	if flags.print {
-		fmt.Fprintln(werr, path)
+		fmt.Fprintln(werr, trimPath(path))
 	}
 
 	s := bufio.NewScanner(r)
 	for lineNum := 1; s.Scan(); lineNum++ {
 
 		if text := s.Text(); matcher(text) {
-			fmt.Fprintf(wout, "%s:%d:%s\n", path, lineNum, text)
+			fmt.Fprintf(wout, "%s:%d:%s\n", trimPath(path), lineNum, text)
 		}
 	}
 
