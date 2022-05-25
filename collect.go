@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -171,6 +172,9 @@ func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher
 		if err != nil {
 			return fmt.Errorf("readdir %s: %w", path, err)
 		}
+
+		// Make output predictable.
+		sort.Strings(names)
 
 		for _, name := range names {
 			if err := gather(wout, werr, flags, path, filepath.Join(path, name), matcher); err != nil {

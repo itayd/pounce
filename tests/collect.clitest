@@ -37,8 +37,8 @@ $
 $ # inlcude binary files
 $ "${POUNCE}" collect --nowd --bin -rps 'unobtanium'; echo $?
 README.md
-some/dir/animals.txt
 some/binary
+some/dir/animals.txt
 0
 $ # no binary files
 $ "${POUNCE}" collect --nowd -rps 'unobtanium'; echo $?
