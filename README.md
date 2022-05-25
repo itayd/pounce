@@ -30,7 +30,7 @@ $ pounce collect -r -s 'dog' | sed -e 's/dog/cat/g' | pounce apply
 
 # TODO
 
-- [ ] tests
+- [ ] apply tests
 - [ ] deal with colons in file names.
 - [ ] deal with no EOL last line.
 - [ ] apply: only generate backup files if content actually changed.
