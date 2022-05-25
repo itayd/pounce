@@ -3,7 +3,7 @@ $
 $ # recursive
 $ "${POUNCE}" collect --nowd -rs 'dogs'; echo $?
 README.md:1:I like dogs.
-some/dir/dogs.txt:3:dogs are the best!
+some/dir/animals.txt:3:dogs are the best!
 0
 $
 $ # not recursive
@@ -25,50 +25,55 @@ $
 $ # only certain extension
 $ "${POUNCE}" collect --nowd -x txt -s 'dogs'; echo $?
 0
+$
+$ # two extensions
+$ "${POUNCE}" collect --nowd -x txt -x md -s 'meow'; echo $?
+README.md:3:meow
+0
 $ "${POUNCE}" collect --nowd -rx txt -s 'dogs'; echo $?
-some/dir/dogs.txt:3:dogs are the best!
+some/dir/animals.txt:3:dogs are the best!
 0
 $
 $ # inlcude binary files
 $ "${POUNCE}" collect --nowd --bin -rps 'unobtanium'; echo $?
 README.md
-some/dir/dogs.txt
+some/dir/animals.txt
 some/binary
 0
 $ # no binary files
 $ "${POUNCE}" collect --nowd -rps 'unobtanium'; echo $?
 README.md
-some/dir/dogs.txt
+some/dir/animals.txt
 0
 $
 $ # regex
 $ "${POUNCE}" collect --nowd -rpe '^[cC]'; echo $?
 README.md
 README.md:2:Cats are the best.
-some/dir/dogs.txt
-some/dir/dogs.txt:4:cats are the best!
+some/dir/animals.txt
+some/dir/animals.txt:4:cats are the best!
 0
 $
 $ # regex or a string
 $ "${POUNCE}" collect --nowd -re '^[cC]' -s 'dog'; echo $?
 README.md:1:I like dogs.
 README.md:2:Cats are the best.
-some/dir/dogs.txt:3:dogs are the best!
-some/dir/dogs.txt:4:cats are the best!
+some/dir/animals.txt:3:dogs are the best!
+some/dir/animals.txt:4:cats are the best!
 0
 $
 $ # two strings
 $ "${POUNCE}" collect --nowd -rs 'cat' -s 'dog'; echo $?
 README.md:1:I like dogs.
-some/dir/dogs.txt:3:dogs are the best!
-some/dir/dogs.txt:4:cats are the best!
+some/dir/animals.txt:3:dogs are the best!
+some/dir/animals.txt:4:cats are the best!
 0
 $
 $ # two regexes
 $ "${POUNCE}" collect --nowd -re '^[cC]' -e '^d'; echo $?
 README.md:2:Cats are the best.
-some/dir/dogs.txt:3:dogs are the best!
-some/dir/dogs.txt:4:cats are the best!
+some/dir/animals.txt:3:dogs are the best!
+some/dir/animals.txt:4:cats are the best!
 0
 $
 $ # wd
@@ -76,14 +81,17 @@ $ TRIM_CWD_PREFIX="${TESTROOT}/" "${POUNCE}" collect -s ''; echo $?
 # wd=fixtures
 README.md:1:I like dogs.
 README.md:2:Cats are the best.
+README.md:3:meow
 0
 $
 $ # abs
 $ TRIM_CWD_PREFIX="${TESTROOT}/" "${POUNCE}" collect -ras ''; echo $?
 fixtures/README.md:1:I like dogs.
 fixtures/README.md:2:Cats are the best.
-fixtures/some/dir/dogs.txt:1:pigs are the best!
-fixtures/some/dir/dogs.txt:2:fish are the best!
-fixtures/some/dir/dogs.txt:3:dogs are the best!
-fixtures/some/dir/dogs.txt:4:cats are the best!
+fixtures/README.md:3:meow
+fixtures/some/dir/animals.txt:1:pigs are the best!
+fixtures/some/dir/animals.txt:2:fish are the best!
+fixtures/some/dir/animals.txt:3:dogs are the best!
+fixtures/some/dir/animals.txt:4:cats are the best!
+fixtures/some/dir/animals.txt:5:meow
 0
