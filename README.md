@@ -5,7 +5,7 @@ simple find and replace in files.
 # Install
 
 ```
-$ go install github.com/itayd/pounce
+$ go install github.com/itayd/pounce@latest
 ```
 
 # Use

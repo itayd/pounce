@@ -18,6 +18,6 @@ jobs:
       with:
         go-version: '1.18.0'
     - name: build
-      run: make pounce
+      run: make pounce && ./pounce -v
     - name: test
       run: make test
