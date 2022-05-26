@@ -17,6 +17,12 @@ var app = cli.App{
 	Version:                version,
 	Flags:                  append(append(commonFlags, collectFlags...), applyFlags...),
 	Action: func(c *cli.Context) error {
+		if dir := commonConfig.dir; dir != "" {
+			if err := os.Chdir(dir); err != nil {
+				return fmt.Errorf("chdir: %w", err)
+			}
+		}
+
 		args := c.Args().Slice()
 
 		if commonConfig.collect && commonConfig.apply ||
@@ -68,7 +74,7 @@ func both(werr io.Writer, args []string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		if err := err.(*exec.ExitError); err != nil {
+		if err, ok := err.(*exec.ExitError); ok && err != nil {
 			return fmt.Errorf("editor exited with code %d", err.ExitCode())
 		}
 

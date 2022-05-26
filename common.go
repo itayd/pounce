@@ -19,9 +19,16 @@ func trimPath(p string) string {
 
 var commonConfig struct {
 	print, nowd, collect, apply bool
+	dir                         string
 }
 
 var commonFlags = []cli.Flag{
+	&cli.StringFlag{
+		Name:        "dir",
+		Aliases:     []string{"d"},
+		Destination: &commonConfig.dir,
+		Usage:       "set working directory",
+	},
 	&cli.BoolFlag{
 		Name:        "print",
 		Aliases:     []string{"p"},

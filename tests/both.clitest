@@ -1,0 +1,85 @@
+$ dir0=$(mktemp -d)
+$ trap "rm -fR ${dir0}" 0
+$ cd "${dir0}"
+$ cp -r "${TESTROOT}/fixtures" .
+$ ${POUNCE} -d fixtures -c --nowd -rs '' > before
+$ cat before | sed -e 's/dogs/cats/g' > after
+$ ${POUNCE} -d fixtures -a < after
+$ find fixtures -type f -not -name binary -exec cat {} \;
+I like cats.
+Cats are the best.
+meow
+pigs are the best!
+fish are the best!
+cats are the best!
+cats are the best!
+meow
+$
+$ # with backup files
+$ dir1=$(mktemp -d)
+$ trap "rm -fR ${dir1}" 0
+$ cd "${dir1}"
+$ cp -r "${TESTROOT}/fixtures" .
+$ ${POUNCE} -d fixtures -a --bak _bak < "${dir0}/after"
+$ find . -type f -print
+./fixtures/README.md_bak
+./fixtures/README.md
+./fixtures/some/dir/animals.txt
+./fixtures/some/dir/animals.txt_bak
+./fixtures/some/binary
+$ cat ./fixtures/README.md_bak
+I like dogs.
+Cats are the best.
+meow
+$ cat ./fixtures/README.md
+I like cats.
+Cats are the best.
+meow
+$
+$ # with editor
+$ dir2=$(mktemp -d)
+$ trap "rm -fR ${dir2}" 0
+$ cd "${dir2}"
+$ cp -r "${TESTROOT}/fixtures" .
+$ EDITOR=cat ${POUNCE} --nowd -rs 'meow'
+fixtures/README.md:3:meow
+fixtures/some/dir/animals.txt:5:meow
+$ echo "#!/bin/sh" > ./mod.sh
+$ echo "exec sed -i '' -e 's/dog/cat/g' \$1" >> ./mod.sh
+$ chmod +x ./mod.sh
+$ EDITOR=./mod.sh ${POUNCE} --nowd -rs 'dog'
+$ find . -type f -not -name binary -and -not -name mod.sh -exec cat {} \;
+I like cats.
+Cats are the best.
+meow
+pigs are the best!
+fish are the best!
+cats are the best!
+cats are the best!
+meow
+$
+$ # wd
+$ dir3=$(mktemp -d)
+$ trap "rm -fR ${dir3}" 0
+$ cd "${dir3}"
+$ cp -r "${TESTROOT}/fixtures" .
+$ ${POUNCE} -d fixtures -c -rs '' > before
+$ cat before | sed -e 's/dogs/cats/g' > after
+$ ${POUNCE} -a < after #=> --exit 1
+$ ${POUNCE} -d fixtures -a < after
+$
+$ # abs
+$ dir4=$(mktemp -d)
+$ trap "rm -fR ${dir4}" 0
+$ cd "${dir4}"
+$ cp -r "${TESTROOT}/fixtures" .
+$ ${POUNCE} --abs -d fixtures -c -rs '' | sed -e 's/dog/cat/g' | ${POUNCE} -d fixtures -a
+$ find fixtures -type f -not -name binary -and -not -name mod.sh -exec cat {} \;
+I like cats.
+Cats are the best.
+meow
+pigs are the best!
+fish are the best!
+cats are the best!
+cats are the best!
+meow

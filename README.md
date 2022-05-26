@@ -51,14 +51,12 @@ $ pounce -s ''
 
 # TODO
 
-- [ ] apply tests.
 - [ ] deal with colons in file names.
-- [ ] deal with no EOL last line.
-- [ ] apply: only generate backup files if content actually changed.
-- [ ] apply: read/write piece wise.
+- [ ] deal with no EOL on last line of files.
 - [ ] `\n` vs `\r\n`?
-- [ ] example in README could be better.
-- [ ] cli flags can be better phrased.
+- [ ] apply: only generate backup files if content actually changed?
+- [ ] apply: read/write piece wise.
+- [ ] cli flags docs can be better phrased.
 
 # Disclaimer
 
