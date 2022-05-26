@@ -11,43 +11,23 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-type applyFlags struct {
-	print, nowd bool
-	bak         string
-}
+var (
+	applyConfig struct {
+		bak string
+	}
 
-var cliApplyFlags applyFlags
-
-var applyCmd = cli.Command{
-	Name:        "apply",
-	UsageText:   "pounce apply [-opts]",
-	Description: "apply modified modified lines",
-	Aliases:     []string{"a"},
-	Flags: []cli.Flag{
-		&cli.BoolFlag{
-			Name:        "print",
-			Aliases:     []string{"p"},
-			Destination: &cliApplyFlags.print,
-			Usage:       "print each incoming line",
-		},
+	applyFlags = []cli.Flag{
 		&cli.StringFlag{
 			Name:        "bak",
 			Aliases:     []string{"i"},
-			Destination: &cliApplyFlags.bak,
+			Destination: &applyConfig.bak,
 			Usage:       "if not empty, backup originals with given suffix",
+			Category:    "apply",
 		},
-		&cli.BoolFlag{
-			Name:        "nowd",
-			Destination: &cliApplyFlags.nowd,
-			Usage:       "ignore wd comment",
-		},
-	},
-	Action: func(c *cli.Context) error {
-		return apply(cliApplyFlags, os.Stdin)
-	},
-}
+	}
+)
 
-func apply(flags applyFlags, r io.Reader) error {
+func apply(r io.Reader) error {
 	s := bufio.NewScanner(r)
 
 	acc := struct {
@@ -62,7 +42,7 @@ func apply(flags applyFlags, r io.Reader) error {
 			return nil
 		}
 
-		if err := apply1(flags, acc.path, acc.data); err != nil {
+		if err := apply1(acc.path, acc.data); err != nil {
 			return fmt.Errorf("%s: %w", acc.path, err)
 		}
 
@@ -75,7 +55,7 @@ func apply(flags applyFlags, r io.Reader) error {
 	for i := 0; s.Scan(); i++ {
 		text := strings.TrimLeft(s.Text(), " \t")
 
-		if !flags.nowd && strings.HasPrefix(text, wdprefix) {
+		if !commonConfig.nowd && strings.HasPrefix(text, wdprefix) {
 			expectedwd := text[len(wdprefix):]
 
 			wd, err := os.Getwd()
@@ -94,7 +74,7 @@ func apply(flags applyFlags, r io.Reader) error {
 			continue
 		}
 
-		if flags.print {
+		if commonConfig.print {
 			fmt.Fprintln(os.Stderr, text)
 		}
 
@@ -129,13 +109,13 @@ func apply(flags applyFlags, r io.Reader) error {
 }
 
 // TODO: all contents is read into memory. Need to do it piecewise.
-func apply1(flags applyFlags, path string, data map[int]string) error {
+func apply1(path string, data map[int]string) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	if bak := flags.bak; len(bak) > 0 {
+	if bak := applyConfig.bak; len(bak) > 0 {
 		if err := os.WriteFile(path+bak, content, 0755); err != nil {
 			return fmt.Errorf("backup %s%s: %w", path, bak, err)
 		}

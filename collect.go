@@ -10,93 +10,69 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"unicode/utf8"
 
 	"golang.org/x/exp/slices"
 
 	"github.com/urfave/cli/v2"
 )
 
-const wdprefix = "# wd="
+var (
+	collectConfig struct {
+		exts, regexs, strs  cli.StringSlice
+		bin, recursive, abs bool
+	}
 
-var trimPathPrefix = os.Getenv("TRIM_CWD_PREFIX")
-
-func trimPath(p string) string {
-	return strings.TrimPrefix(p, trimPathPrefix)
-}
-
-type collectFlags struct {
-	exts, regexs, strs               cli.StringSlice
-	print, bin, recursive, abs, nowd bool
-}
-
-var cliCollectFlags collectFlags
-
-var collectCmd = cli.Command{
-	Name:        "collect",
-	UsageText:   "pounce collect [-opts] files",
-	Description: "print lines that match given matchers in files",
-	Aliases:     []string{"c"},
-	Flags: []cli.Flag{
-		&cli.BoolFlag{
-			Name:        "print",
-			Aliases:     []string{"p"},
-			Destination: &cliCollectFlags.print,
-			Usage:       "print matched files to stderr",
-		},
+	collectFlags = []cli.Flag{
 		&cli.BoolFlag{
 			Name:        "recursive",
 			Aliases:     []string{"r"},
-			Destination: &cliCollectFlags.recursive,
+			Destination: &collectConfig.recursive,
 			Usage:       "process subdirectories recursively",
+			Category:    "collect",
 		},
 		&cli.StringSliceFlag{
 			Name:        "ext",
 			Aliases:     []string{"x"},
-			Destination: &cliCollectFlags.exts,
+			Destination: &collectConfig.exts,
 			Usage:       "only process files with extention",
+			Category:    "collect",
 		},
 		&cli.StringSliceFlag{
 			Name:        "regex",
 			Aliases:     []string{"e"},
-			Destination: &cliCollectFlags.regexs,
+			Destination: &collectConfig.regexs,
 			Usage:       "filter content for given regexp",
+			Category:    "collect",
 		},
 		&cli.StringSliceFlag{
 			Name:        "str",
 			Aliases:     []string{"s"},
-			Destination: &cliCollectFlags.strs,
+			Destination: &collectConfig.strs,
 			Usage:       "filter content for given string",
+			Category:    "collect",
 		},
 		&cli.BoolFlag{
 			Name:        "bin",
-			Destination: &cliCollectFlags.bin,
+			Destination: &collectConfig.bin,
 			Usage:       "also search in binary files",
+			Category:    "collect",
 		},
 		&cli.BoolFlag{
 			Name:        "abs",
-			Aliases:     []string{"a"},
-			Destination: &cliCollectFlags.abs,
+			Destination: &collectConfig.abs,
 			Usage:       "write all file's absolute paths",
+			Category:    "collect",
 		},
-		&cli.BoolFlag{
-			Name:        "nowd",
-			Destination: &cliCollectFlags.nowd,
-			Usage:       "supress working directory comment",
-		},
-	},
-	Action: func(c *cli.Context) error {
-		return collect(os.Stdout, os.Stderr, cliCollectFlags, c.Args().Slice())
-	},
-}
+	}
+)
 
-func collect(wout, werr io.Writer, flags collectFlags, args []string) error {
-	m, err := matcher(flags)
+func collect(wout, werr io.Writer, args []string) error {
+	m, err := matcher()
 	if err != nil {
 		return err
 	}
 
-	if !flags.abs && !flags.nowd {
+	if !collectConfig.abs && !commonConfig.nowd {
 		cwd, err := os.Getwd()
 		if err != nil {
 			return fmt.Errorf("getwd: %w", err)
@@ -106,11 +82,11 @@ func collect(wout, werr io.Writer, flags collectFlags, args []string) error {
 	}
 
 	if len(args) == 0 {
-		return gather(wout, werr, flags, "", ".", m)
+		return gather(wout, werr, "", ".", m)
 	}
 
 	for _, arg := range args {
-		if err := gather(wout, werr, flags, "", arg, m); err != nil {
+		if err := gather(wout, werr, "", arg, m); err != nil {
 			return err
 		}
 	}
@@ -118,15 +94,15 @@ func collect(wout, werr io.Writer, flags collectFlags, args []string) error {
 	return nil
 }
 
-func matcher(flags collectFlags) (func(string) bool, error) {
+func matcher() (func(string) bool, error) {
 	var ms []func(string) bool
 
-	for _, s := range flags.strs.Value() {
+	for _, s := range collectConfig.strs.Value() {
 		s1 := s
 		ms = append(ms, func(x string) bool { return strings.Contains(x, s1) })
 	}
 
-	for _, s := range flags.regexs.Value() {
+	for _, s := range collectConfig.regexs.Value() {
 		re, err := regexp.Compile(s)
 		if err != nil {
 			return nil, fmt.Errorf("matcher %q: %w", s, err)
@@ -150,7 +126,7 @@ func matcher(flags collectFlags) (func(string) bool, error) {
 	}, nil
 }
 
-func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher func(string) bool) error {
+func gather(wout, werr io.Writer, prev, path string, matcher func(string) bool) error {
 	f, err := os.OpenFile(path, os.O_RDONLY, 0)
 	if err != nil {
 		return fmt.Errorf("open %s: %w", path, err)
@@ -164,7 +140,7 @@ func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher
 	}
 
 	if fi.IsDir() {
-		if prev != "" && !flags.recursive {
+		if prev != "" && !collectConfig.recursive {
 			return nil
 		}
 
@@ -177,7 +153,7 @@ func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher
 		sort.Strings(names)
 
 		for _, name := range names {
-			if err := gather(wout, werr, flags, path, filepath.Join(path, name), matcher); err != nil {
+			if err := gather(wout, werr, path, filepath.Join(path, name), matcher); err != nil {
 				return err
 			}
 		}
@@ -189,7 +165,7 @@ func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher
 		return nil
 	}
 
-	if exts := flags.exts.Value(); len(exts) > 0 {
+	if exts := collectConfig.exts.Value(); len(exts) > 0 {
 		ext := filepath.Ext(path)
 		if len(ext) > 0 && ext[0] == '.' {
 			ext = ext[1:]
@@ -202,7 +178,7 @@ func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher
 
 	var r io.Reader = f
 
-	if !flags.bin {
+	if !collectConfig.bin {
 		pre := make([]byte, 32)
 		n, err := f.Read(pre)
 		if err != nil && err != io.EOF {
@@ -218,7 +194,7 @@ func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher
 		r = io.MultiReader(bytes.NewReader(pre), f)
 	}
 
-	if flags.abs {
+	if collectConfig.abs {
 		apath, err := filepath.Abs(path)
 		if err != nil {
 			return fmt.Errorf("abs %s: %w", path, err)
@@ -231,7 +207,7 @@ func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher
 		path = apath
 	}
 
-	if flags.print {
+	if commonConfig.print {
 		fmt.Fprintln(werr, trimPath(path))
 	}
 
@@ -244,23 +220,4 @@ func gather(wout, werr io.Writer, flags collectFlags, prev, path string, matcher
 	}
 
 	return nil
-}
-
-// from golang.org/x/tools/godoc/util.
-func isText(s []byte) bool {
-	const max = 1024 // at least utf8.UTFMax
-	if len(s) > max {
-		s = s[0:max]
-	}
-	for i, c := range string(s) {
-		if i+utf8.UTFMax > len(s) {
-			// last char may be incomplete - ignore
-			break
-		}
-		if c == 0xFFFD || c < ' ' && c != '\n' && c != '\t' && c != '\f' {
-			// decoding error or control character - not a text file
-			return false
-		}
-	}
-	return true
 }
