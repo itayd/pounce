@@ -57,6 +57,7 @@ $ pounce -s ''
 - [ ] apply: only generate backup files if content actually changed?
 - [ ] apply: read/write piece wise.
 - [ ] cli flags docs can be better phrased.
+- [ ] make sure tests are portable.
 
 # Disclaimer
 

@@ -5,7 +5,7 @@ $ cp -r "${TESTROOT}/fixtures" .
 $ ${POUNCE} -d fixtures -c --nowd -rs '' > before
 $ cat before | sed -e 's/dogs/cats/g' > after
 $ ${POUNCE} -d fixtures -a < after
-$ find fixtures -type f -not -name binary -exec cat {} \;
+$ find fixtures -type f -not -name binary | sort | xargs cat
 I like cats.
 Cats are the best.
 meow
@@ -21,12 +21,12 @@ $ trap "rm -fR ${dir1}" 0
 $ cd "${dir1}"
 $ cp -r "${TESTROOT}/fixtures" .
 $ ${POUNCE} -d fixtures -a --bak _bak < "${dir0}/after"
-$ find . -type f -print
-./fixtures/README.md_bak
+$ find . -type f -print | sort
 ./fixtures/README.md
+./fixtures/README.md_bak
+./fixtures/some/binary
 ./fixtures/some/dir/animals.txt
 ./fixtures/some/dir/animals.txt_bak
-./fixtures/some/binary
 $ cat ./fixtures/README.md_bak
 I like dogs.
 Cats are the best.
@@ -41,14 +41,15 @@ $ dir2=$(mktemp -d)
 $ trap "rm -fR ${dir2}" 0
 $ cd "${dir2}"
 $ cp -r "${TESTROOT}/fixtures" .
-$ EDITOR=cat ${POUNCE} --nowd -rs 'meow'
-fixtures/README.md:3:meow
-fixtures/some/dir/animals.txt:5:meow
-$ echo "#!/bin/sh" > ./mod.sh
-$ echo "exec sed -i '' -e 's/dog/cat/g' \$1" >> ./mod.sh
-$ chmod +x ./mod.sh
-$ EDITOR=./mod.sh ${POUNCE} --nowd -rs 'dog'
-$ find . -type f -not -name binary -and -not -name mod.sh -exec cat {} \;
+$ EDITOR=cat ${POUNCE} -d fixtures --nowd -rs 'meow'
+README.md:3:meow
+some/dir/animals.txt:5:meow
+$ echo "#!/bin/sh" > mod.sh
+$ echo "sed -e 's/dog/cat/g' \$1 > \$1.new" >> mod.sh
+$ echo "mv \$1.new \$1" >> mod.sh
+$ chmod +x mod.sh
+$ EDITOR=../mod.sh ${POUNCE} -d fixtures --nowd -rs 'dog'
+$ find . -type f -not -name binary -and -not -name mod.sh | sort | xargs cat
 I like cats.
 Cats are the best.
 meow
@@ -74,7 +75,7 @@ $ trap "rm -fR ${dir4}" 0
 $ cd "${dir4}"
 $ cp -r "${TESTROOT}/fixtures" .
 $ ${POUNCE} --abs -d fixtures -c -rs '' | sed -e 's/dog/cat/g' | ${POUNCE} -d fixtures -a
-$ find fixtures -type f -not -name binary -and -not -name mod.sh -exec cat {} \;
+$ find fixtures -type f -not -name binary -and -not -name mod.sh | sort | xargs cat
 I like cats.
 Cats are the best.
 meow
