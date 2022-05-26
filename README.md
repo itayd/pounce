@@ -18,18 +18,18 @@ $ tree
         └── dogs.txt
 
 # First collect all lines to be modified.
-$ pounce -crs 'dog' > /tmp/dogs.txt
-$ cat /tmp/dogs.txt
+$ pounce -crs 'dog' > /tmp/lines
+$ cat /tmp/lines
 README.md:1:I like dogs
 some/dir/dogs.txt:3:dogs are the best!
 
 # The idea is that this can be done interactively using vim.
 # This allows trial and error and faster feedback, but for
 # the sake of demo, we'll use sed.
-$ sed -i '' -e 's/dog/cat/g' /tmp/dogs.txt
+$ sed -i '' -e 's/dog/cat/g' /tmp/lines
 
 # Apply modifications.
-$ pounce -a < /tmp/dogs.txt
+$ pounce -a < /tmp/lines
 $ cat README.md
 I like cats
 ```
@@ -39,7 +39,7 @@ Interactive one liner version (will launch $EDITOR to modify lines):
 $ pounce -s 'dog'
 ```
 
-One liner version:
+One liner version, using sed:
 ```
 $ pounce -crs 'dog' | sed -e 's/dog/cat/g' | pounce -a
 ```
@@ -58,6 +58,7 @@ $ pounce -s ''
 - [ ] apply: read/write piece wise.
 - [ ] `\n` vs `\r\n`?
 - [ ] example in README could be better.
+- [ ] cli flags can be better phrased.
 
 # Disclaimer
 
