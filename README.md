@@ -1,6 +1,8 @@
 # pounce
 
-simple find and replace in files.
+Interactive find and replace in files.
+
+[![asciicast](https://asciinema.org/a/NZCOwnK63J1dwYQRAbhpWPeGK.svg)](https://asciinema.org/a/NZCOwnK63J1dwYQRAbhpWPeGK)
 
 # Install
 
